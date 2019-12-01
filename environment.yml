@@ -1,0 +1,14 @@
+name: advent_2019
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.8
+  - numpy
+  - pandas
+  - altair
+  - ipython
+  - jupyter
+  - jupyterlab
+  - matplotlib
+  - networkx
