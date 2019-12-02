@@ -12,3 +12,6 @@ dependencies:
   - jupyterlab
   - matplotlib
   - networkx
+  - black
+  - mypy
+
