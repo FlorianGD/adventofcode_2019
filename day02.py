@@ -5,8 +5,9 @@ from typing import List
 from itertools import product
 
 
-puzzle_input = Path("./day02_input.txt").read_text()
-puzzle = [int(x) for x in puzzle_input.split(",")]
+def read_input() -> List[int]:
+    puzzle_input = Path("./day02_input.txt").read_text()
+    return [int(x) for x in puzzle_input.split(",")]
 
 
 def operate(intcodes: List[int], position: int = 0) -> List[int]:
@@ -35,4 +36,19 @@ def part1(puzzle: List[int]) -> int:
     return operate(puzzle)[0]
 
 
+puzzle = read_input()
 print(f"Solution for part 1: {part1(puzzle)}")
+
+
+def part2(puzzle: List[int]) -> int:
+    for noun, verb in product(range(100), range(100)):
+        puzzle2 = puzzle.copy()
+        puzzle2[1] = noun
+        puzzle2[2] = verb
+        if operate(puzzle2)[0] == 19690720:
+            return 100 * noun + verb
+    raise ValueError("Pair not found, surely a mistake in the code.")
+
+
+puzzle = read_input()
+print(f"Solution for part 1: {part2(puzzle)}")
