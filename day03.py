@@ -25,7 +25,9 @@ class Wire:
         return self.path
 
     def __and__(self, other) -> Set[complex]:
-        return self.positions & other.positions
+        intersection = self.positions & other.positions
+        intersection.remove(0)
+        return intersection
 
 
 def parse_input(puzzle: str) -> List[Wire]:
@@ -40,9 +42,25 @@ def manhattan_distance(position: complex) -> int:
 
 
 def first_non_zero_intersection(wire1: Wire, wire2: Wire) -> int:
+    # 0 is removed from the intersection
     intersections = wire1 & wire2
-    intersections.remove(0)
     return min([manhattan_distance(p) for p in intersections])
 
 
 print(f"Solution for part 1: {first_non_zero_intersection(*parse_input(puzzle))}")
+
+
+def intersection_step(wire1: Wire, wire2: Wire) -> int:
+    steps = []
+    for intersect in wire1 & wire2:
+        for i, p in enumerate(wire1.path):
+            if p == intersect:
+                break
+        for j, p in enumerate(wire2.path):
+            if p == intersect:
+                break
+        steps.append(i + j)
+    return min(steps)
+
+
+print(f"Solution for part 2: {intersection_step(*parse_input(puzzle))}")
