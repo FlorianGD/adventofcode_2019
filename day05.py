@@ -39,22 +39,35 @@ def value_from_mode(intcodes: List[int], mode: str, val: int) -> int:
         return val
 
 
-def operate(intcodes: List[int], pointer: int = 0, input_: int = 1) -> List[int]:
+def operate(intcodes: List[int], pointer: int = 0, input_: int = 1) -> None:
     instr = get_instruction(intcodes[pointer])
     if instr.opcode == "end":
-        return intcodes
+        return  # intcodes
+
     # 1 parameter instructions
     target = intcodes[pointer + 1]
 
     if instr.opcode == "set_input":
         intcodes[target] = input_
         return operate(intcodes, pointer + 2, input_=input_)
-    target = value_from_mode(intcodes, instr.mode1, target)
+
     if instr.opcode == "set_output":
+        target = value_from_mode(intcodes, instr.mode1, target)
         print(f"output: {target}")
         return operate(intcodes, pointer + 2, input_=input_)
+
+    # 2 parameters instructions
+    a = value_from_mode(intcodes, instr.mode1, intcodes[pointer + 1])
+    b = value_from_mode(intcodes, instr.mode2, intcodes[pointer + 2])
     if instr.opcode == "jump-if-true":
-        pass
+        if a:
+            return operate(intcodes, b, input_)
+        return operate(intcodes, pointer + 3, input_)
+
+    if instr.opcode == "jump-if-false":
+        if not a:
+            return operate(intcodes, b, input_)
+        return operate(intcodes, pointer + 3, input_)
     # 3 parameters instructions
     a = value_from_mode(intcodes, instr.mode1, intcodes[pointer + 1])
     b = value_from_mode(intcodes, instr.mode2, intcodes[pointer + 2])
@@ -63,13 +76,36 @@ def operate(intcodes: List[int], pointer: int = 0, input_: int = 1) -> List[int]
     if instr.opcode == "add":
         intcodes[target] = a + b
         return operate(intcodes, pointer + 4, input_=input_)
+
     if instr.opcode == "mul":
         intcodes[target] = a * b
         return operate(intcodes, pointer + 4, input_=input_)
+
+    if instr.opcode == "less than":
+        if a < b:
+            intcodes[target] = 1
+            return operate(intcodes, pointer + 4, input_=input_)
+        else:
+            intcodes[target] = 0
+            return operate(intcodes, pointer + 4, input_=input_)
+
+    if instr.opcode == "equals":
+        if a == b:
+            intcodes[target] = 1
+            return operate(intcodes, pointer + 4, input_=input_)
+        else:
+            intcodes[target] = 0
+            return operate(intcodes, pointer + 4, input_=input_)
 
     raise ValueError(f"opcode {instr.opcode} not recognised.")
 
 
 # operate([1002, 4, 3, 4, 33])
 puzzle = read_input()
+print("part 1")
 operate(puzzle, input_=1)
+
+# Part 2
+print("part 2")
+puzzle = read_input()
+operate(puzzle, input_=5)
