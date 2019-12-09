@@ -1,7 +1,7 @@
 """AoC 2019 day 5: Sunny with a Chance of Asteroids"""
 
 from pathlib import Path
-from typing import List, Generator
+from typing import List, Generator, Tuple
 from collections import namedtuple
 from itertools import permutations
 
@@ -40,8 +40,10 @@ def value_from_mode(intcodes: List[int], mode: str, val: int) -> int:
         return val
 
 
-def operate(intcodes: List[int], input_: List[int]) -> Generator[int, None, None]:
-    pointer = 0
+def operate(
+    intcodes: List[int], input_: List[int], pointer: int = 0
+) -> Generator[Tuple[int, int], None, None]:
+    """yields the output and the pointer for a given program."""
     while True:
         instr = get_instruction(intcodes[pointer])
         if instr.opcode == "end":
@@ -58,7 +60,7 @@ def operate(intcodes: List[int], input_: List[int]) -> Generator[int, None, None
         if instr.opcode == "set_output":
             target = value_from_mode(intcodes, instr.mode1, target)
             pointer += 2
-            yield target
+            yield target, pointer
             continue
 
         # 2 parameters instructions
@@ -78,8 +80,7 @@ def operate(intcodes: List[int], input_: List[int]) -> Generator[int, None, None
                 pointer += 3
             continue
         # 3 parameters instructions
-        a = value_from_mode(intcodes, instr.mode1, intcodes[pointer + 1])
-        b = value_from_mode(intcodes, instr.mode2, intcodes[pointer + 2])
+        # a, b defined above already
         target = intcodes[pointer + 3]
 
         if instr.opcode == "add":
@@ -113,14 +114,15 @@ def operate(intcodes: List[int], input_: List[int]) -> Generator[int, None, None
         raise ValueError(f"opcode {instr.opcode} not recognised.")
 
 
-def run_through(phases, puzzle):
+def run_through(phases: Tuple[int, ...], puzzle: List[int]) -> List[int]:
     next_input = [0]
     intcodes = puzzle.copy()
     for i in range(5):
         phase = phases[i]
         next_input.append(phase)
         puzzle = intcodes.copy()
-        next_input = list(operate2(puzzle, next_input))
+        # For this part, we disregard the pointer.
+        next_input = list(a for a, b in operate(puzzle, next_input))
     return next_input
 
 
@@ -133,17 +135,27 @@ assert max_of_all_phases(puzzle_test) == 43210
 
 print(f"Solution for part 1: {max_of_all_phases(read_input())}")
 
+# Part 2
+
 
 def run_through_feedback(phases, puzzle):
     next_input = [0]
-    for i in range(5):
-        phase = phases[i]
-        next_input.append(phase)
-        next_input = list(operate2(puzzle, next_input))
+    pointer = 0
+    i = 0
+    # What I did not get at first is that each program is independent
+    puzzles = [puzzle.copy() for _ in range(5)]
+    pointers = [0] * 5
     while True:
-        pass
-        break
-    return next_input
+        if i < 5:
+            phase = phases[i]
+            next_input.append(phase)
+        try:
+            output, pointer = next(operate(puzzles[i % 5], next_input, pointers[i % 5]))
+            next_input.append(output)
+            pointers[i % 5] = pointer
+            i += 1
+        except StopIteration:
+            return output
 
 
 def max_of_all_phases_feedback(puzzle):
@@ -152,5 +164,4 @@ def max_of_all_phases_feedback(puzzle):
     )
 
 
-run_through_feedback([9, 8, 7, 6, 5], read_input())
-
+print(f"Solution for part 1: {max_of_all_phases_feedback(read_input())}")
