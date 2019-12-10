@@ -1,9 +1,6 @@
 """AoC 2019 day 10: Monitoring Station"""
-import numpy as np
 from typing import List, Tuple, Generator, Set, Dict
-from itertools import combinations
-import pandas as pd
-from collections import defaultdict
+from pathlib import Path
 
 Coord = Tuple[int, int]
 
@@ -34,87 +31,91 @@ def farthest(p1: Coord, p2: Coord, p3: Coord) -> Coord:
 def visibles(puzzle: str) -> Dict[Coord, int]:
     coordinates = set(get_asteroids_coordinates(puzzle))
     max_possible = len(coordinates) - 1
-    results = defaultdict(lambda: max_possible)
+    results = {}
     for a in coordinates:
-        burnt: Set = set()
+        masked_coord: Set = set()
         for b in coordinates - {a}:
-            if b in burnt:
+            if b in masked_coord:
                 continue
             for c in coordinates - {a, b}:
-                if c in burnt:
+                if c in masked_coord:
                     continue
                 if masked(a, b, c):
-                    results[a] -= 1
-                    burnt.add(farthest(a, b, c))
+                    # results[a] -= 1
+                    masked_coord.add(farthest(a, b, c))
+        results[a] = len(coordinates - {a} - masked_coord)
     return results
 
 
-example = """.#..#
-.....
-#####
-....#
-...##"""
+# example = """.#..#
+# .....
+# #####
+# ....#
+# ...##"""
 
-assert max(visibles(example).values()) == 8
+# assert max(visibles(example).values()) == 8
 
 
-example2 = """......#.#.
-#..#.#....
-..#######.
-.#.#.###..
-.#..#.....
-..#....#.#
-#..#....#.
-.##.#..###
-##...#..#.
-.#....####"""
+# example2 = """......#.#.
+# #..#.#....
+# ..#######.
+# .#.#.###..
+# .#..#.....
+# ..#....#.#
+# #..#....#.
+# .##.#..###
+# ##...#..#.
+# .#....####"""
 
-assert max(visibles(example2).values()) == 33
+# assert max(visibles(example2).values()) == 33
 
-example3 = """#.#...#.#.
-.###....#.
-.#....#...
-##.#.#.#.#
-....#.#.#.
-.##..###.#
-..#...##..
-..##....##
-......#...
-.####.###."""
-assert max(visibles(example3).values()) == 35
+# example3 = """#.#...#.#.
+# .###....#.
+# .#....#...
+# ##.#.#.#.#
+# ....#.#.#.
+# .##..###.#
+# ..#...##..
+# ..##....##
+# ......#...
+# .####.###."""
+# assert max(visibles(example3).values()) == 35
 
-example4 = """.#..#..###
-####.###.#
-....###.#.
-..###.##.#
-##.##.#.#.
-....###..#
-..#.#..#.#
-#..#.#.###
-.##...##.#
-.....#.#.."""
-assert max(visibles(example4).values()) == 41
+# example4 = """.#..#..###
+# ####.###.#
+# ....###.#.
+# ..###.##.#
+# ##.##.#.#.
+# ....###..#
+# ..#.#..#.#
+# #..#.#.###
+# .##...##.#
+# .....#.#.."""
+# assert max(visibles(example4).values()) == 41
 
-example5 = """.#..##.###...#######
-##.############..##.
-.#.######.########.#
-.###.#######.####.#.
-#####.##.#.##.###.##
-..#####..#.#########
-####################
-#.####....###.#.#.##
-##.#################
-#####.##.###..####..
-..######..##.#######
-####.##.####...##..#
-.#####..#.######.###
-##...#.##########...
-#.##########.#######
-.####.#.###.###.#.##
-....##.##.###..#####
-.#.#.###########.###
-#.#.#.#####.####.###
-###.##.####.##.#..##"""
+# example5 = """.#..##.###...#######
+# ##.############..##.
+# .#.######.########.#
+# .###.#######.####.#.
+# #####.##.#.##.###.##
+# ..#####..#.#########
+# ####################
+# #.####....###.#.#.##
+# ##.#################
+# #####.##.###..####..
+# ..######..##.#######
+# ####.##.####...##..#
+# .#####..#.######.###
+# ##...#.##########...
+# #.##########.#######
+# .####.#.###.###.#.##
+# ....##.##.###..#####
+# .#.#.###########.###
+# #.#.#.#####.####.###
+# ###.##.####.##.#..##"""
 
-ex5 = visibles(example5)
-assert max(ex5.values()) == 210
+# ex5 = visibles(example5)
+# assert max(ex5.values()) == 210
+
+puzzle = Path("./day10_input.txt").read_text()
+print(f"Solution for part 1: {max(visibles(puzzle).values())}")
