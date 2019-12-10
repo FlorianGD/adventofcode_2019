@@ -67,25 +67,27 @@ def operate(
             return
 
         # 1 parameter instructions
-        target = value_from_mode(intcodes, instr.mode1, intcodes[pointer + 1], base)
-
         if instr.opcode == "set_input":
+            target = intcodes[pointer + 1]
+            if instr.mode1 == "relative":
+                target += base
             intcodes[target] = input_.pop()
             pointer += 2
             continue
-
+        
+        a = value_from_mode(intcodes, instr.mode1, intcodes[pointer + 1], base)
         if instr.opcode == "set_output":
             pointer += 2
-            yield target, pointer
+            yield a, pointer
             continue
 
         if instr.opcode == "adjust_base":
-            base += target
+            base += a
             pointer += 2
             continue
 
         # 2 parameters instructions
-        a = value_from_mode(intcodes, instr.mode1, intcodes[pointer + 1], base)
+        # a defined above
         b = value_from_mode(intcodes, instr.mode2, intcodes[pointer + 2], base)
         if instr.opcode == "jump-if-true":
             if a:
@@ -103,6 +105,8 @@ def operate(
         # 3 parameters instructions
         # a, b defined above already
         target = intcodes[pointer + 3]
+        if instr.mode3 == "relative":
+            target += base
         # target = value_from_mode(intcodes, instr.mode3, intcodes[pointer + 3], base)
 
         if instr.opcode == "add":
@@ -136,14 +140,18 @@ def operate(
         raise ValueError(f"opcode {instr.opcode} not recognised.")
 
 
-puzzle_test = [109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99]
-print(list(a for a, b in operate(make_intcodes(puzzle_test), [])))
+# puzzle_test = [109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99]
+# print(list(a for a, b in operate(make_intcodes(puzzle_test), [])))
 
-puzzle_test = [104, 1125899906842624, 99]
-print(list(operate(make_intcodes(puzzle_test), [])))
+# puzzle_test = [104, 1125899906842624, 99]
+# print(list(operate(make_intcodes(puzzle_test), [])))
 
-puzzle_test = [1102, 34915192, 34915192, 7, 4, 7, 99, 0]
-print(list(operate(make_intcodes(puzzle_test), [])))
+# puzzle_test = [1102, 34915192, 34915192, 7, 4, 7, 99, 0]
+# print(list(operate(make_intcodes(puzzle_test), [])))
 
-print(list(a for a, b in operate(read_input(), [1])))
+print("Solution for part 1:", end="")
+print(next(a for a, b in operate(read_input(), [1])))
 
+# Part 2
+print("Solution for part 2:", end="")
+print(next(a for a, b in operate(read_input(), [2])))
