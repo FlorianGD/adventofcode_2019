@@ -7,137 +7,139 @@ from itertools import permutations
 
 Instruction = namedtuple("Instruction", "opcode mode1 mode2 mode3")
 
-opcodes = {
-    99: "end",
-    1: "add",
-    2: "mul",
-    3: "set_input",
-    4: "set_output",
-    5: "jump-if-true",
-    6: "jump-if-false",
-    7: "less than",
-    8: "equals",
-    9: "adjust_base",
-}
-
 Intcodes = DefaultDict[int, int]
 
 
-def make_intcodes(puzzle: List[int]) -> Intcodes:
-    intcodes: Intcodes = defaultdict(int)
-    for i, val in enumerate(puzzle):
-        intcodes[i] = val
-    return intcodes
-
-
-def read_input(day: str = "day09_input.txt") -> Intcodes:
+def read_input(day: str = "day09_input.txt") -> List[int]:
     puzzle_input = Path(day).read_text()
     puzzle = [int(x) for x in puzzle_input.split(",")]
-    return make_intcodes(puzzle)
+    return puzzle
 
 
-def get_instruction(param: int, opcodes: Dict[int, str] = opcodes) -> Instruction:
-    opcode = opcodes[param % 100]
-    modes = {0: "position", 1: "immediate", 2: "relative"}
-    mode1 = modes[param // 100 % 10]
-    mode2 = modes[param // 1000 % 10]
-    mode3 = modes[param // 10000 % 10]
-    return Instruction(opcode, mode1, mode2, mode3)
+class Program:
 
+    opcodes = {
+        99: "end",
+        1: "add",
+        2: "mul",
+        3: "set_input",
+        4: "set_output",
+        5: "jump-if-true",
+        6: "jump-if-false",
+        7: "less than",
+        8: "equals",
+        9: "adjust_base",
+    }
 
-def value_from_mode(intcodes: Intcodes, mode: str, val: int, base: int) -> int:
-    if mode == "position":
-        return intcodes[val]
-    elif mode == "immediate":
-        return val
-    elif mode == "relative":
-        return intcodes[base + val]
-    else:
-        raise ValueError(f"Not recognized mode: {mode}.")
+    def __init__(self, puzzle: List[int], input_: List[int] = []):
+        self.puzzle = puzzle
+        self.intcodes = self._make_intcodes()
+        self.pointer = 0
+        self.base = 0
+        self.input = input_
 
+    def _make_intcodes(self) -> Intcodes:
+        intcodes: Intcodes = defaultdict(int)
+        for i, val in enumerate(self.puzzle):
+            intcodes[i] = val
+        return intcodes
 
-def operate(
-    intcodes: Intcodes, input_: List[int], pointer: int = 0
-) -> Generator[Tuple[int, int], None, None]:
-    """yields the output and the pointer for a given program."""
-    base = 0
-    while True:
-        instr = get_instruction(intcodes[pointer])
-        if instr.opcode == "end":
-            return
+    def _get_instruction(self, param: int) -> Instruction:
+        opcode = self.opcodes[param % 100]
+        modes = {0: "position", 1: "immediate", 2: "relative"}
+        mode1 = modes[param // 100 % 10]
+        mode2 = modes[param // 1000 % 10]
+        mode3 = modes[param // 10000 % 10]
+        return Instruction(opcode, mode1, mode2, mode3)
 
-        # 1 parameter instructions
-        if instr.opcode == "set_input":
-            target = intcodes[pointer + 1]
-            if instr.mode1 == "relative":
-                target += base
-            intcodes[target] = input_.pop()
-            pointer += 2
-            continue
-        
-        a = value_from_mode(intcodes, instr.mode1, intcodes[pointer + 1], base)
-        if instr.opcode == "set_output":
-            pointer += 2
-            yield a, pointer
-            continue
+    def _value_from_mode(self, mode: str, val: int) -> int:
+        if mode == "position":
+            return self.intcodes[val]
+        elif mode == "immediate":
+            return val
+        elif mode == "relative":
+            return self.intcodes[self.base + val]
+        else:
+            raise ValueError(f"Not recognized mode: {mode}.")
 
-        if instr.opcode == "adjust_base":
-            base += a
-            pointer += 2
-            continue
+    def operate(self) -> Generator[int, None, None]:
+        """yields the output and the pointer for a given program."""
+        while True:
+            instr = self._get_instruction(self.intcodes[self.pointer])
+            if instr.opcode == "end":
+                return
 
-        # 2 parameters instructions
-        # a defined above
-        b = value_from_mode(intcodes, instr.mode2, intcodes[pointer + 2], base)
-        if instr.opcode == "jump-if-true":
-            if a:
-                pointer = b
-            else:
-                pointer += 3
-            continue
+            # 1 parameter instructions
+            if instr.opcode == "set_input":
+                target = self.intcodes[self.pointer + 1]
+                if instr.mode1 == "relative":
+                    target += self.base
+                self.intcodes[target] = self.input.pop()
+                self.pointer += 2
+                continue
 
-        if instr.opcode == "jump-if-false":
-            if not a:
-                pointer = b
-            else:
-                pointer += 3
-            continue
-        # 3 parameters instructions
-        # a, b defined above already
-        target = intcodes[pointer + 3]
-        if instr.mode3 == "relative":
-            target += base
-        # target = value_from_mode(intcodes, instr.mode3, intcodes[pointer + 3], base)
+            a = self._value_from_mode(instr.mode1, self.intcodes[self.pointer + 1])
+            if instr.opcode == "set_output":
+                self.pointer += 2
+                yield a
+                continue
 
-        if instr.opcode == "add":
-            intcodes[target] = a + b
-            pointer += 4
-            continue
+            if instr.opcode == "adjust_base":
+                self.base += a
+                self.pointer += 2
+                continue
 
-        if instr.opcode == "mul":
-            intcodes[target] = a * b
-            pointer += 4
-            continue
+            # 2 parameters instructions
+            # a defined above
+            b = self._value_from_mode(instr.mode2, self.intcodes[self.pointer + 2])
+            if instr.opcode == "jump-if-true":
+                if a:
+                    self.pointer = b
+                else:
+                    self.pointer += 3
+                continue
 
-        if instr.opcode == "less than":
-            if a < b:
-                intcodes[target] = 1
-                pointer += 4
-            else:
-                intcodes[target] = 0
-                pointer += 4
-            continue
+            if instr.opcode == "jump-if-false":
+                if not a:
+                    self.pointer = b
+                else:
+                    self.pointer += 3
+                continue
+            # 3 parameters instructions
+            # a, b defined above already
+            target = self.intcodes[self.pointer + 3]
+            if instr.mode3 == "relative":
+                target += self.base
 
-        if instr.opcode == "equals":
-            if a == b:
-                intcodes[target] = 1
-                pointer += 4
-            else:
-                intcodes[target] = 0
-                pointer += 4
-            continue
+            if instr.opcode == "add":
+                self.intcodes[target] = a + b
+                self.pointer += 4
+                continue
 
-        raise ValueError(f"opcode {instr.opcode} not recognised.")
+            if instr.opcode == "mul":
+                self.intcodes[target] = a * b
+                self.pointer += 4
+                continue
+
+            if instr.opcode == "less than":
+                if a < b:
+                    self.intcodes[target] = 1
+                    self.pointer += 4
+                else:
+                    self.intcodes[target] = 0
+                    self.pointer += 4
+                continue
+
+            if instr.opcode == "equals":
+                if a == b:
+                    self.intcodes[target] = 1
+                    self.pointer += 4
+                else:
+                    self.intcodes[target] = 0
+                    self.pointer += 4
+                continue
+
+            raise ValueError(f"opcode {instr.opcode} not recognised.")
 
 
 # puzzle_test = [109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99]
@@ -149,9 +151,12 @@ def operate(
 # puzzle_test = [1102, 34915192, 34915192, 7, 4, 7, 99, 0]
 # print(list(operate(make_intcodes(puzzle_test), [])))
 
-print("Solution for part 1:", end="")
-print(next(a for a, b in operate(read_input(), [1])))
+if __name__ == "__main__":
+    program = Program(read_input(), [1])
+    print("Solution for part 1:", end="")
+    print(next(program.operate()))
 
-# Part 2
-print("Solution for part 2:", end="")
-print(next(a for a, b in operate(read_input(), [2])))
+    # Part 2
+    progam = Program(read_input(), [2])
+    print("Solution for part 2:", end="")
+    print(next(progam.operate()))
