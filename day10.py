@@ -1,6 +1,7 @@
 """AoC 2019 day 10: Monitoring Station"""
-from typing import List, Tuple, Generator, Set, Dict
+import cmath
 from pathlib import Path
+from typing import Dict, Generator, List, Set, Tuple
 
 Coord = Tuple[int, int]
 
@@ -14,21 +15,21 @@ def get_asteroids_coordinates(puzzle: str) -> Generator[Coord, None, None]:
 
 def masked(p1: Coord, p2: Coord, p3: Coord) -> bool:
     """True if p2 or p3 cannot be seen from p1."""
-    p1x, p1y, p2x, p2y, p3x, p3y = (*p1, *p2, *p3)
-    if (p2x - p1x) * (p3y - p1y) - (p2y - p1y) * (p3x - p1x) != 0:
+    p1x, p1y, p2x, p2y, p3x, p3y = *p1, *p2, *p3  # type: ignore
+    if (p2x - p1x) * (p3y - p1y) - (p2y - p1y) * (p3x - p1x) != 0:  # type: ignore
         return False
-    return (p2x - p1x) * (p3x - p1x) + (p2y - p1y) * (p3y - p1y) > 0
+    return (p2x - p1x) * (p3x - p1x) + (p2y - p1y) * (p3y - p1y) > 0  # type: ignore
 
 
 def farthest(p1: Coord, p2: Coord, p3: Coord) -> Coord:
     """which of p2 or p3 is farthest to p1?"""
-    p1x, p1y, p2x, p2y, p3x, p3y = (*p1, *p2, *p3)
-    d2 = abs(p2x - p1x) + abs(p2y - p1y)
-    d3 = abs(p3x - p1x) + abs(p3y - p1y)
+    p1x, p1y, p2x, p2y, p3x, p3y = *p1, *p2, *p3  # type: ignore
+    d2 = abs(p2x - p1x) + abs(p2y - p1y)  # type: ignore
+    d3 = abs(p3x - p1x) + abs(p3y - p1y)  # type: ignore
     return p2 if max(d2, d3) == d2 else p3
 
 
-def visibles(puzzle: str) -> Dict[Coord, int]:
+def visibles(puzzle: str) -> Dict[Coord, Set[Coord]]:
     coordinates = set(get_asteroids_coordinates(puzzle))
     max_possible = len(coordinates) - 1
     results = {}
@@ -43,79 +44,25 @@ def visibles(puzzle: str) -> Dict[Coord, int]:
                 if masked(a, b, c):
                     # results[a] -= 1
                     masked_coord.add(farthest(a, b, c))
-        results[a] = len(coordinates - {a} - masked_coord)
+        results[a] = coordinates - {a} - masked_coord
     return results
 
 
-# example = """.#..#
-# .....
-# #####
-# ....#
-# ...##"""
+def sort_by_angle(center: Coord, coordinates: Set[Coord]) -> List[Coord]:
+    pi = cmath.pi
+    complex_center = complex(*center)
+    coords = list(coordinates)
+    centered_complex_coord = [complex(*coord) - complex_center for coord in coords]
+    phases = [(cmath.phase(c) + pi / 2) % (2 * pi) for c in centered_complex_coord]
+    coordinates_by_phase = sorted(zip(phases, coords))
+    return [coord for _, coord in coordinates_by_phase]
 
-# assert max(visibles(example).values()) == 8
 
-
-# example2 = """......#.#.
-# #..#.#....
-# ..#######.
-# .#.#.###..
-# .#..#.....
-# ..#....#.#
-# #..#....#.
-# .##.#..###
-# ##...#..#.
-# .#....####"""
-
-# assert max(visibles(example2).values()) == 33
-
-# example3 = """#.#...#.#.
-# .###....#.
-# .#....#...
-# ##.#.#.#.#
-# ....#.#.#.
-# .##..###.#
-# ..#...##..
-# ..##....##
-# ......#...
-# .####.###."""
-# assert max(visibles(example3).values()) == 35
-
-# example4 = """.#..#..###
-# ####.###.#
-# ....###.#.
-# ..###.##.#
-# ##.##.#.#.
-# ....###..#
-# ..#.#..#.#
-# #..#.#.###
-# .##...##.#
-# .....#.#.."""
-# assert max(visibles(example4).values()) == 41
-
-# example5 = """.#..##.###...#######
-# ##.############..##.
-# .#.######.########.#
-# .###.#######.####.#.
-# #####.##.#.##.###.##
-# ..#####..#.#########
-# ####################
-# #.####....###.#.#.##
-# ##.#################
-# #####.##.###..####..
-# ..######..##.#######
-# ####.##.####...##..#
-# .#####..#.######.###
-# ##...#.##########...
-# #.##########.#######
-# .####.#.###.###.#.##
-# ....##.##.###..#####
-# .#.#.###########.###
-# #.#.#.#####.####.###
-# ###.##.####.##.#..##"""
-
-# ex5 = visibles(example5)
-# assert max(ex5.values()) == 210
-
-puzzle = Path("./day10_input.txt").read_text()
-print(f"Solution for part 1: {max(visibles(puzzle).values())}")
+if __name__ == "__main__":
+    puzzle = Path("./day10_input.txt").read_text()
+    all_visibles = visibles(puzzle)
+    print(f"Solution for part 1: {max(map(len, all_visibles.values()))}")
+    center_coord = max(all_visibles.items(), key=lambda x: len(x[1]))[0]
+    by_angle = sort_by_angle(center_coord, all_visibles[center_coord])
+    solution = by_angle[199]
+    print(f"Solution for part 2: {solution[0] * 100 + solution[1]}")
