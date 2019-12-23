@@ -28,8 +28,41 @@ puzzle = """<x=14, y=15, z=-2>
 <x=6, y=12, z=-13>
 <x=-2, y=10, z=-8>"""
 
+
+def part2(puzzle):
+    positions, velocities = parse_puzzle(puzzle)
+
+    def stack(col, positions=positions, velocities=velocities):
+        return tuple(np.r_[positions[:, col], velocities[:, col]])
+
+    x_seen, y_seen, z_seen = set([stack(0)]), set([stack(1)]), set([stack(2)])
+    found_x, found_y, found_z = False, False, False
+    while not (found_x and found_y and found_z):
+        simulate(positions, velocities)
+        if not found_x:
+            s = stack(0)
+            if s in x_seen:
+                found_x = True
+            else:
+                x_seen.add(s)
+        if not found_y:
+            s = stack(1)
+            if s in y_seen:
+                found_y = True
+            else:
+                y_seen.add(s)
+        if not found_z:
+            s = stack(2)
+            if s in z_seen:
+                found_z = True
+            else:
+                z_seen.add(s)
+    return np.lcm.reduce([len(x_seen), len(y_seen), len(z_seen)])
+
+
 if __name__ == "__main__":
     positions, velocities = parse_puzzle(puzzle)
     for _ in range(1000):
         simulate(positions, velocities)
     print(f"Solution for part 1: {energy(positions, velocities)}")
+    print(f"Solution for part 2: {part2(puzzle)}")
