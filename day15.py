@@ -48,14 +48,12 @@ def dijsktra(grid: Grid, initial: Node = 0j) -> List[complex]:
     shortest_paths: Dict[Node, Tuple[Node, int]] = {initial: (None, 0)}
     current_node = initial
     visited = set()
-
     while current_node is not None and grid[current_node] != 2:
         visited.add(current_node)
         destinations = [
             current_node + a for a in (1, -1, 1j, -1j) if grid[current_node + a] != 0
         ]
         weight_to_current_node = shortest_paths[current_node][1]
-
         for next_node in destinations:
             weight = weight_to_current_node + 1
             if next_node not in shortest_paths:
@@ -64,7 +62,6 @@ def dijsktra(grid: Grid, initial: Node = 0j) -> List[complex]:
                 current_shortest_weight = shortest_paths[next_node][1]
                 if current_shortest_weight > weight:
                     shortest_paths[next_node] = (current_node, weight)
-
         next_destinations = {
             node: shortest_paths[node] for node in shortest_paths if node not in visited
         }
@@ -72,7 +69,6 @@ def dijsktra(grid: Grid, initial: Node = 0j) -> List[complex]:
             raise ValueError("Route Not Possible")
         # next node is the destination with the lowest weight
         current_node = min(next_destinations, key=lambda k: next_destinations[k][1])
-
     # Work back through destinations in shortest path
     path: List[complex] = []
     while current_node is not None:
@@ -122,5 +118,9 @@ if __name__ == "__main__":
     print_grid(grid)
     print(f"Solution for part 1: {len(dijsktra(grid) )- 1}")
     target = next(a for a, b in grid.items() if b == 2)
-    # visited = set()
-    print(f"Solution for part 2: {fill_grid(grid, target)}")
+    # The below lines aez not needed with ipython, but neede with plain python
+    import sys
+
+    sys.setrecursionlimit(1500)
+    max_fill = fill_grid(grid, start=target, visited=set())
+    print(f"Solution for part 2: {max_fill}")
