@@ -73,8 +73,7 @@ def dijsktra(grid: Grid, initial: Node = 0j) -> List[complex]:
     path: List[complex] = []
     while current_node is not None:
         path.append(current_node)
-        next_node = shortest_paths[current_node][0]
-        current_node = next_node
+        current_node = shortest_paths[current_node][0]
     # Reverse path
     path = path[::-1]
     return path
